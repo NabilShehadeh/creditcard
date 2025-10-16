@@ -248,6 +248,11 @@ async def initialize_explainer():
         explainer = None
 
 
+@app.get("/")
+async def root():
+    """Root endpoint."""
+    return {"message": "Credit Card Fraud Detection API", "status": "running"}
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
