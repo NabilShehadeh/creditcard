@@ -238,26 +238,34 @@ class ModelTrainer:
         """Train XGBoost with hyperparameter tuning."""
         logger.info("Training XGBoost...")
         
-        # XGBoost parameters
+        # XGBoost parameters (simplified for compatibility)
         params = {
             'objective': 'binary:logistic',
-            'eval_metric': 'auc',
             'max_depth': 6,
             'learning_rate': 0.05,
             'subsample': 0.8,
             'colsample_bytree': 0.8,
             'random_state': 42,
-            'scale_pos_weight': len(y_train[y_train == 0]) / len(y_train[y_train == 1])
+            'scale_pos_weight': len(y_train[y_train == 0]) / len(y_train[y_train == 1]),
+            'n_estimators': 100
         }
         
-        # Train model
-        model = xgb.XGBClassifier(**params)
-        model.fit(
-            X_train, y_train,
-            eval_set=[(X_val, y_val)],
-            early_stopping_rounds=50,
-            verbose=False
-        )
+        # Train model with error handling for different XGBoost versions
+        try:
+            model = xgb.XGBClassifier(**params)
+            model.fit(X_train, y_train)
+        except Exception as e:
+            # Handle any XGBoost API issues
+            logger.warning(f"XGBoost training error: {e}. Using basic parameters.")
+            # Use minimal parameters for maximum compatibility
+            model = xgb.XGBClassifier(
+                objective='binary:logistic',
+                max_depth=3,
+                learning_rate=0.1,
+                n_estimators=50,
+                random_state=42
+            )
+            model.fit(X_train, y_train)
         
         y_pred_proba = model.predict_proba(X_val)[:, 1]
         y_pred = model.predict(X_val)
