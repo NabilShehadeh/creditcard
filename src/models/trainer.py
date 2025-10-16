@@ -28,9 +28,18 @@ from sklearn.pipeline import Pipeline
 # Advanced ML
 import lightgbm as lgb
 import xgboost as xgb
-from imblearn.over_sampling import SMOTE
-from imblearn.under_sampling import RandomUnderSampler
-from imblearn.pipeline import Pipeline as ImbPipeline
+# Import imbalanced learning modules with error handling
+try:
+    from imblearn.over_sampling import SMOTE
+    from imblearn.under_sampling import RandomUnderSampler
+    from imblearn.pipeline import Pipeline as ImbPipeline
+    IMBLEARN_AVAILABLE = True
+except ImportError:
+    print("Warning: imbalanced-learn not available. Some sampling methods will be disabled.")
+    SMOTE = None
+    RandomUnderSampler = None
+    ImbPipeline = None
+    IMBLEARN_AVAILABLE = False
 
 # Deep Learning
 import tensorflow as tf
