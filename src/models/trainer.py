@@ -76,6 +76,9 @@ class ModelTrainer:
         """
         logger.info("Starting model training...")
         
+        # Validate input data for NaN values
+        self._validate_input_data(X_train, y_train, X_val, y_val)
+        
         # 1. Baseline Logistic Regression
         self._train_logistic_regression(X_train, y_train, X_val, y_val)
         
@@ -96,6 +99,27 @@ class ModelTrainer:
         
         logger.info("Model training completed!")
         return self.results
+    
+    def _validate_input_data(self, X_train: pd.DataFrame, y_train: pd.Series,
+                           X_val: pd.DataFrame, y_val: pd.Series):
+        """Validate input data for NaN values and other issues."""
+        # Check for NaN values
+        if X_train.isnull().sum().sum() > 0:
+            raise ValueError(f"Training features contain NaN values: {X_train.isnull().sum().sum()}")
+        if y_train.isnull().sum() > 0:
+            raise ValueError(f"Training target contains NaN values: {y_train.isnull().sum()}")
+        if X_val.isnull().sum().sum() > 0:
+            raise ValueError(f"Validation features contain NaN values: {X_val.isnull().sum().sum()}")
+        if y_val.isnull().sum() > 0:
+            raise ValueError(f"Validation target contains NaN values: {y_val.isnull().sum()}")
+        
+        # Check for infinite values
+        if np.isinf(X_train.select_dtypes(include=[np.number])).sum().sum() > 0:
+            raise ValueError("Training features contain infinite values")
+        if np.isinf(X_val.select_dtypes(include=[np.number])).sum().sum() > 0:
+            raise ValueError("Validation features contain infinite values")
+        
+        logger.info("Input data validation passed")
     
     def _train_logistic_regression(self, X_train: pd.DataFrame, y_train: pd.Series,
                                   X_val: pd.DataFrame, y_val: pd.Series):

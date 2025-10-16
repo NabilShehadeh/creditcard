@@ -111,15 +111,48 @@ class DataProcessor:
     
     def _handle_missing_values(self, df: pd.DataFrame) -> pd.DataFrame:
         """Handle missing values in the dataset."""
-        # For this dataset, missing values are rare, but we'll handle them
-        missing_counts = df.isnull().sum()
+        df_processed = df.copy()
+        
+        # Check for missing values
+        missing_counts = df_processed.isnull().sum()
         if missing_counts.sum() > 0:
             logger.warning(f"Found missing values: {missing_counts[missing_counts > 0].to_dict()}")
+            
             # Fill missing values with median for numerical columns
-            for col in df.select_dtypes(include=[np.number]).columns:
-                df[col].fillna(df[col].median(), inplace=True)
+            for col in df_processed.select_dtypes(include=[np.number]).columns:
+                if df_processed[col].isnull().sum() > 0:
+                    median_val = df_processed[col].median()
+                    df_processed[col].fillna(median_val, inplace=True)
+                    logger.info(f"Filled {col} missing values with median: {median_val}")
+            
+            # Fill missing values with mode for categorical columns
+            for col in df_processed.select_dtypes(include=['object']).columns:
+                if df_processed[col].isnull().sum() > 0:
+                    mode_val = df_processed[col].mode().iloc[0] if not df_processed[col].mode().empty else 'unknown'
+                    df_processed[col].fillna(mode_val, inplace=True)
+                    logger.info(f"Filled {col} missing values with mode: {mode_val}")
         
-        return df
+        # Check for infinite values
+        inf_counts = np.isinf(df_processed.select_dtypes(include=[np.number])).sum()
+        if inf_counts.sum() > 0:
+            logger.warning(f"Found infinite values: {inf_counts[inf_counts > 0].to_dict()}")
+            # Replace infinite values with large finite values
+            df_processed = df_processed.replace([np.inf, -np.inf], np.nan)
+            # Fill the NaN values created by replacing inf with median
+            for col in df_processed.select_dtypes(include=[np.number]).columns:
+                if df_processed[col].isnull().sum() > 0:
+                    median_val = df_processed[col].median()
+                    df_processed[col].fillna(median_val, inplace=True)
+        
+        # Final check - ensure no NaN values remain
+        final_missing = df_processed.isnull().sum().sum()
+        if final_missing > 0:
+            logger.error(f"Still have {final_missing} missing values after processing!")
+            # Drop any remaining rows with NaN values as last resort
+            df_processed = df_processed.dropna()
+            logger.warning(f"Dropped rows with NaN values. New shape: {df_processed.shape}")
+        
+        return df_processed
     
     def _scale_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """Scale numerical features using RobustScaler."""
@@ -134,25 +167,30 @@ class DataProcessor:
     
     def _add_derived_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """Add derived features for better fraud detection."""
-        # Time-based features
-        df['hour'] = (df['Time'] / 3600) % 24
-        df['day_of_week'] = (df['Time'] / (3600 * 24)) % 7
+        df_processed = df.copy()
         
-        # Amount-based features
-        df['amount_log'] = np.log1p(df['Amount'])
-        df['amount_sqrt'] = np.sqrt(df['Amount'])
+        # Time-based features
+        df_processed['hour'] = (df_processed['Time'] / 3600) % 24
+        df_processed['day_of_week'] = (df_processed['Time'] / (3600 * 24)) % 7
+        
+        # Amount-based features (handle negative amounts)
+        df_processed['amount_log'] = np.log1p(np.abs(df_processed['Amount']))
+        df_processed['amount_sqrt'] = np.sqrt(np.abs(df_processed['Amount']))
         
         # Interaction features
-        df['time_amount_interaction'] = df['Time'] * df['Amount']
+        df_processed['time_amount_interaction'] = df_processed['Time'] * df_processed['Amount']
         
         # Statistical features from V columns
         v_cols = [f'V{i}' for i in range(1, 29)]
-        df['v_mean'] = df[v_cols].mean(axis=1)
-        df['v_std'] = df[v_cols].std(axis=1)
-        df['v_sum'] = df[v_cols].sum(axis=1)
+        df_processed['v_mean'] = df_processed[v_cols].mean(axis=1)
+        df_processed['v_std'] = df_processed[v_cols].std(axis=1)
+        df_processed['v_sum'] = df_processed[v_cols].sum(axis=1)
+        
+        # Handle any NaN values that might have been created
+        df_processed = self._handle_missing_values(df_processed)
         
         logger.info("Added derived features")
-        return df
+        return df_processed
     
     def split_data(self, df: pd.DataFrame, test_size: float = 0.2, 
                    stratify_col: str = 'Class') -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -200,9 +238,35 @@ class DataProcessor:
         X = df[feature_cols].copy()
         y = df[target_col].copy()
         
+        # Final validation - ensure no NaN values
+        if X.isnull().sum().sum() > 0:
+            logger.error(f"Found NaN values in features: {X.isnull().sum().sum()}")
+            # Fill any remaining NaN values
+            for col in X.columns:
+                if X[col].isnull().sum() > 0:
+                    if X[col].dtype in ['object']:
+                        X[col].fillna('unknown', inplace=True)
+                    else:
+                        X[col].fillna(X[col].median(), inplace=True)
+                    logger.warning(f"Filled NaN values in {col}")
+        
+        if y.isnull().sum() > 0:
+            logger.error(f"Found NaN values in target: {y.isnull().sum()}")
+            # Drop rows with NaN target values
+            valid_mask = ~y.isnull()
+            X = X[valid_mask]
+            y = y[valid_mask]
+            logger.warning(f"Dropped {sum(~valid_mask)} rows with NaN target values")
+        
+        # Final check
+        if X.isnull().sum().sum() > 0 or y.isnull().sum() > 0:
+            logger.error("Still have NaN values after final processing!")
+            raise ValueError("Cannot proceed with NaN values in features or target")
+        
         self.feature_columns = feature_cols
         
-        logger.info(f"Prepared features: {len(feature_cols)} features")
+        logger.info(f"Prepared features: {X.shape}, target: {y.shape}")
+        logger.info(f"Feature columns: {len(feature_cols)}")
         return X, y
     
     def save_preprocessor(self, file_path: str):
