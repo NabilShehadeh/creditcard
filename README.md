@@ -2,14 +2,32 @@
 
 A comprehensive machine learning system for detecting fraudulent credit card transactions using engineered behavioral features and robust modeling pipelines.
 
+---
+
+## Interactive Dashboard (home)
+
+Explore the data from the repo’s **interactive dashboard** on your machine:
+
+```bash
+# Clone and enter the repo
+git clone <repository-url>
+cd creditcard
+
+# Install dependencies (includes Streamlit)
+pip install -r requirements.txt
+
+# Run the dashboard — opens in your browser
+streamlit run dashboard.py
+```
+
+**Dashboard features:** correlation **heatmap**, **scatter plot** (e.g. V1 vs V2 colored by fraud), and **sliders** for Amount range, Time range, and max points. Uses a black & creme theme and integrates **DataProcessor**, **FeatureEngineer** (feature importance), and benchmark **model metrics**. Set your `creditcard.csv` path in the sidebar (defaults to `~/Downloads/creditcard.csv` or `data/raw/creditcard.csv`).
+
+---
+
 ## Quick Start
 
 ### 1. Installation
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd credit-card-fraud-detection
-
 # Create virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -18,19 +36,24 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Run EDA and Training
+### 2. Run the dashboard (recommended first step)
 ```bash
-# Start with exploratory data analysis
+streamlit run dashboard.py
+```
+
+### 3. Run EDA and Training
+```bash
+# Exploratory data analysis
 jupyter notebook notebooks/01_eda.ipynb
 
 # Train models
-python src/models/train_models.py
+python train_models.py
 
-# Evaluate models
+# Evaluate models (if available)
 python src/models/evaluate_models.py
 ```
 
-### 3. Deploy API
+### 4. Deploy API
 ```bash
 # Using Docker (recommended)
 docker-compose up --build
@@ -58,8 +81,9 @@ This project uses the **Credit Card Fraud Detection** dataset from Kaggle, which
 
 ```
 credit-card-fraud-detection/
+├── dashboard.py             # Interactive dashboard (Streamlit) — run with: streamlit run dashboard.py
 ├── data/                    # Data storage and utilities
-│   ├── raw/                # Raw datasets
+│   ├── raw/                # Raw datasets (e.g. creditcard.csv)
 │   ├── processed/          # Processed datasets
 │   └── utils.py            # Data loading utilities
 ├── src/                    # Source code
