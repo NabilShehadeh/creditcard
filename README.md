@@ -6,7 +6,11 @@ A comprehensive machine learning system for detecting fraudulent credit card tra
 
 ## Interactive Dashboard (home)
 
-Explore the data from the repo’s **interactive dashboard** on your machine:
+The dashboard includes a **correlation heatmap** (black & white, high contrast) and scatter plots. Preview:
+
+![Correlation heatmap](docs/heatmap.png)
+
+**Run the dashboard locally:**
 
 ```bash
 # Clone and enter the repo
@@ -20,7 +24,7 @@ pip install -r requirements.txt
 streamlit run dashboard.py
 ```
 
-**Dashboard features:** correlation **heatmap**, **scatter plot** (e.g. V1 vs V2 colored by fraud), and **sliders** for Amount range, Time range, and max points. Uses a black & creme theme and integrates **DataProcessor**, **FeatureEngineer** (feature importance), and benchmark **model metrics**. Set your `creditcard.csv` path in the sidebar (defaults to `~/Downloads/creditcard.csv` or `data/raw/creditcard.csv`).
+**No local download required:** the dashboard uses **built-in sample data** by default (leave the CSV path empty in the sidebar). You can optionally point to your own `creditcard.csv` for full data. **Features:** correlation **heatmap**, **scatter plot** (e.g. V1 vs V2 by fraud class), and **sliders** for Amount range, Time range, and max points. **Black & white theme** with proper contrast; integrates **DataProcessor**, **FeatureEngineer**, and benchmark **model metrics**. To regenerate the README heatmap image: `python scripts/generate_heatmap_image.py`.
 
 ---
 
@@ -182,15 +186,17 @@ curl -X POST "http://localhost:8000/predict" \
 ## Testing
 
 ```bash
-# Run all tests
+# Quick checks (no optional deps: lightgbm/tensorflow/pytest)
+python run_checks.py
+
+# Basic functionality tests
+python test_basic.py
+
+# Full test suite (requires: pip install -r requirements.txt)
 pytest tests/
 
 # Run with coverage
 pytest --cov=src tests/
-
-# Run specific test categories
-pytest tests/unit/
-pytest tests/integration/
 ```
 
 ## Documentation
