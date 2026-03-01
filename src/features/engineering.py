@@ -266,9 +266,11 @@ class FeatureEngineer:
         Returns:
             Dictionary of feature importance scores
         """
-        feature_cols = [col for col in df.columns if col != target_col]
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        feature_cols = [col for col in numeric_cols if col != target_col]
+        if not feature_cols:
+            return {}
         correlations = df[feature_cols].corrwith(df[target_col]).abs().sort_values(ascending=False)
-        
         return correlations.to_dict()
     
     def select_top_features(self, df: pd.DataFrame, target_col: str = 'Class', 

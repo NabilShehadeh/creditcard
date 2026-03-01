@@ -3,7 +3,7 @@
 Interactive Credit Card Fraud Detection Dashboard.
 
 Uses data from creditcard.csv with heatmap, scatter plot, and sliders.
-Black and creme theme. Integrates with repo: DataProcessor, feature stats, model metrics.
+Black and white theme. Integrates with repo: DataProcessor, feature stats, model metrics.
 """
 
 import sys
@@ -50,8 +50,8 @@ PLOTLY_LAYOUT = {
     "hoverlabel": {"bgcolor": WHITE, "font": {"color": BLACK}, "bordercolor": BLACK},
 }
 
-def generate_builtin_sample_data(n_samples: int = 15000):
-    """Generate built-in sample data so the dashboard runs with no local CSV or downloads."""
+def generate_builtin_sample_data(n_samples: int = 1500):
+    """Generate built-in sample data (low default for efficiency)."""
     np.random.seed(42)
     data = {
         "Time": np.cumsum(np.random.exponential(800, n_samples)),
@@ -73,23 +73,11 @@ def generate_builtin_sample_data(n_samples: int = 15000):
 @st.cache_data(ttl=300)
 def load_data(file_path: str):
     """Load data: built-in sample (no path), or from CSV path. No local download required by default."""
-    # Empty or missing path → use built-in sample so dashboard works without any CSV
+    # Empty or missing path → use small built-in sample for efficiency
     if not file_path or not str(file_path).strip():
-        if REPO_AVAILABLE:
-            try:
-                processor = DataProcessor()
-                return processor.load_data(None)
-            except Exception:
-                pass
         return generate_builtin_sample_data()
     path = Path(file_path)
     if not path.exists():
-        if REPO_AVAILABLE:
-            try:
-                processor = DataProcessor()
-                return processor.load_data(None)
-            except Exception:
-                pass
         return generate_builtin_sample_data()
     if REPO_AVAILABLE:
         try:
@@ -126,17 +114,21 @@ def main():
         <style>
         .stApp {{ background-color: {WHITE}; }}
         .stSidebar {{ background-color: {GREY_GRID}; }}
-        h1, h2, h3 {{ color: {BLACK}; }}
-        .stMetric label {{ color: {GREY_DARK}; }}
-        .stSlider label {{ color: {BLACK}; }}
-        div[data-testid="stSidebar"] .stMarkdown {{ color: {BLACK}; }}
+        h1, h2, h3, p, span, label {{ color: {BLACK} !important; }}
+        .stMetric label {{ color: {BLACK} !important; }}
+        .stMetric [data-testid="stMetricValue"] {{ color: {BLACK} !important; }}
+        div[data-testid="stMetric"] {{ background-color: {WHITE}; border: 1px solid {GREY_LIGHT}; color: {BLACK}; }}
+        .stSlider label {{ color: {BLACK} !important; }}
+        div[data-testid="stSidebar"] .stMarkdown {{ color: {BLACK} !important; }}
+        .stMarkdown {{ color: {BLACK} !important; }}
         </style>
         """,
         unsafe_allow_html=True,
     )
 
     st.title("Credit Card Fraud Detection — Interactive Dashboard")
-    st.markdown("Explore the dataset with correlation heatmap, scatter plot, and filters. Black & white theme with high contrast. **No download required:** leave the CSV path empty to use built-in sample data.")
+    st.caption("**Nabil Shehadeh** · nshehadeh@usc.edu")
+    st.markdown("Explore the dataset with correlation heatmap, scatter plot, and filters. Black & white theme. **No download required:** leave the CSV path empty to use built-in sample data.")
 
     # Sidebar: data source and filters
     with st.sidebar:
@@ -178,10 +170,10 @@ def main():
         )
         max_points = st.slider(
             "Max points in scatter (performance)",
-            500,
-            50000,
-            5000,
-            500,
+            200,
+            10000,
+            1500,
+            100,
         )
 
     # Load and filter (uses built-in sample when CSV path is empty)
@@ -269,7 +261,7 @@ def main():
         fig_scatter.update_layout(
             **PLOTLY_LAYOUT,
             height=450,
-            legend=dict(title="Class", bgcolor=WHITE, bordercolor=BLACK),
+            legend=dict(title="Class", bgcolor=WHITE, bordercolor=BLACK, font=dict(color=BLACK)),
         )
         st.plotly_chart(fig_scatter, width="stretch")
 
@@ -316,6 +308,13 @@ def main():
     except ImportError:
         st.dataframe(metrics_df, width="stretch")
     st.caption("From README: trained on credit card fraud data. Train with `python train_models.py` and run API with `python api/main.py`.")
+
+    st.divider()
+    st.markdown(
+        "<br><p style='text-align:center; color:#000000; font-size:0.9em;'>"
+        "<strong>Nabil Shehadeh</strong> · nshehadeh@usc.edu · USC</p>",
+        unsafe_allow_html=True,
+    )
 
     st.sidebar.divider()
     data_source = "built-in sample (no file)" if not (csv_path and str(csv_path).strip()) else csv_path

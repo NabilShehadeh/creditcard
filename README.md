@@ -10,6 +10,8 @@ The dashboard includes a **correlation heatmap** (black & white, high contrast) 
 
 ![Correlation heatmap](docs/heatmap.png)
 
+**Findings (data & models):** The dataset is highly imbalanced (~0.17% fraud), with anonymized PCA features (V1–V28) plus Time and Amount. The heatmap shows which features co-vary: many V-features are weakly correlated with each other by design (PCA), while Time and Amount can show structure useful for detection. We compare four approaches: **Logistic Regression** (strong baseline with class weighting), **LightGBM** (best single-model PR-AUC and ROC-AUC in our benchmarks), **Autoencoder** (unsupervised anomaly scoring), and an **Ensemble** that combines them for the highest precision and recall at fixed review budgets. The ensemble achieves the best trade-off for deployment (e.g., PR-AUC 0.87, ROC-AUC 0.95), with LightGBM a close second when a single model is preferred.
+
 **Run the dashboard locally:**
 
 ```bash

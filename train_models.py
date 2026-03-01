@@ -12,8 +12,13 @@ from pathlib import Path
 # Add src to path
 sys.path.append(str(Path(__file__).parent / "src"))
 
-from data.processor import DataProcessor
-from models.trainer import ModelTrainer
+try:
+    from data.processor import DataProcessor
+    from models.trainer import ModelTrainer
+except ImportError as e:
+    print("Missing dependency:", e)
+    print("Install full requirements: pip install -r requirements.txt")
+    sys.exit(1)
 
 # Configure logging
 logging.basicConfig(

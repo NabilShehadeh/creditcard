@@ -17,7 +17,13 @@ sys.path.append(str(Path(__file__).parent / "src"))
 
 from data.processor import DataProcessor
 from features.engineering import FeatureEngineer
-from models.trainer import ModelTrainer
+try:
+    from models.trainer import ModelTrainer
+    MODEL_TRAINER_AVAILABLE = True
+except ImportError as e:
+    MODEL_TRAINER_AVAILABLE = False
+    ModelTrainer = None
+    print("Note: ModelTrainer not available (install lightgbm/tensorflow for full demo):", e)
 
 # Configure logging
 logging.basicConfig(
@@ -104,6 +110,12 @@ def demo_feature_engineering():
 
 def demo_model_training(train_df, test_df):
     """Demonstrate model training capabilities."""
+    if not MODEL_TRAINER_AVAILABLE or ModelTrainer is None:
+        print("\n" + "="*60)
+        print("MODEL TRAINING DEMO (skipped)")
+        print("="*60)
+        print("   Install lightgbm and tensorflow: pip install -r requirements.txt")
+        return None, {}
     print("\n" + "="*60)
     print("MODEL TRAINING DEMO")
     print("="*60)
@@ -148,6 +160,11 @@ def demo_model_training(train_df, test_df):
 
 def demo_prediction(trainer, test_df):
     """Demonstrate prediction capabilities."""
+    if trainer is None:
+        print("\n" + "="*60)
+        print("PREDICTION DEMO (skipped — no model)")
+        print("="*60)
+        return
     print("\n" + "="*60)
     print("PREDICTION DEMO")
     print("="*60)
@@ -242,10 +259,10 @@ def main():
         # Demo 2: Feature Engineering
         demo_feature_engineering()
         
-        # Demo 3: Model Training
+        # Demo 3: Model Training (skipped if ModelTrainer not available)
         trainer, results = demo_model_training(train_df, test_df)
         
-        # Demo 4: Prediction
+        # Demo 4: Prediction (skipped if no trainer)
         demo_prediction(trainer, test_df)
         
         # Demo 5: API Usage
